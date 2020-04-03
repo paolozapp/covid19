@@ -44,5 +44,52 @@ points(total$GE,total$TOTALE_17,col="gray",pch=20)
 points(total$GE,total$TOTALE_18,col="gray",pch=20)
 points(total$GE,total$TOTALE_19,col="gray",pch=20)
 lines(total$GE,total$TOTALE_20,col="red",lwd=2)
-abline(v=c(32,60,91),lty=3)
- 
+abline(v=c(1,32,60,91),lty=3)
+#alldata
+alldata <- lombardy[,c(4,7,8,22,23,24,25,26)]
+alldata <- alldata[,1:7]
+alldata[,4] <- as.numeric(as.character(alldata[,4]))
+alldata[,5] <- as.numeric(as.character(alldata[,5]))
+alldata[,6] <- as.numeric(as.character(alldata[,6]))
+alldata[,7] <- as.numeric(as.character(alldata[,7]))
+total_all <- alldata %>% group_by(GE) %>% summarise(TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19))
+points(total_all$GE,total_all$TOTALE_16,col="black",pch=20)
+points(total_all$GE,total_all$TOTALE_17,col="black",pch=20)
+points(total_all$GE,total_all$TOTALE_18,col="black",pch=20)
+points(total_all$GE,total_all$TOTALE_19,col="black",pch=20)
+
+#analysis of missing data
+excluded <- lombardy[,c(4,7,8,22,23,24,25,26)]
+excluded <- excluded %>% filter(TOTALE_20 == 9999)
+excluded <- excluded[,1:7]
+excluded[,4] <- as.numeric(as.character(excluded[,4]))
+excluded[,5] <- as.numeric(as.character(excluded[,5]))
+excluded[,6] <- as.numeric(as.character(excluded[,6]))
+excluded[,7] <- as.numeric(as.character(excluded[,7]))
+
+#provinces
+excl_provinces <- excluded[,c(1,4,5,6,7)] %>% group_by(NOME_PROVINCIA) %>% summarise(TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19))
+incl_provinces <- data[,c(1,4,5,6,7)] %>% group_by(NOME_PROVINCIA) %>% summarise(TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19))
+cbind(province = excl_provinces[,1],excl = excl_provinces$TOTALE_16/(incl_provinces$TOTALE_16+excl_provinces$TOTALE_16))
+#cbind(province = excl_provinces[,1],excl = excl_provinces$TOTALE_17/(incl_provinces$TOTALE_17+excl_provinces$TOTALE_17))
+#cbind(province = excl_provinces[,1],excl = excl_provinces$TOTALE_18/(incl_provinces$TOTALE_18+excl_provinces$TOTALE_18))
+#cbind(province = excl_provinces[,1],excl = excl_provinces$TOTALE_19/(incl_provinces$TOTALE_19+excl_provinces$TOTALE_19))
+#Milano, Lodi, Bergamo, Cremona, Brescia the only ones with > 50% data
+
+#CL_ETA
+excl_ages <- excluded[,c(2,4,5,6,7)] %>% group_by(CL_ETA) %>% summarise(TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19))
+incl_ages <- data[,c(2,4,5,6,7)] %>% group_by(CL_ETA) %>% summarise(TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19))
+cbind(age = excl_ages[,1],excl = excl_ages$TOTALE_16/(incl_ages$TOTALE_16+excl_ages$TOTALE_16))
+#cbind(age = excl_ages[,1],excl = excl_ages$TOTALE_17/(incl_ages$TOTALE_17+excl_ages$TOTALE_17))
+#cbind(age = excl_ages[,1],excl = excl_ages$TOTALE_18/(incl_ages$TOTALE_18+excl_ages$TOTALE_18))
+#cbind(age = excl_ages[,1],excl = excl_ages$TOTALE_19/(incl_ages$TOTALE_19+excl_ages$TOTALE_19))
+#quite uniform, missing data are skewed to the youngest
+
+#days
+excl_days <- excluded[,c(3,4,5,6,7)] %>% group_by(GE) %>% summarise(TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19))
+incl_days <- data[,c(3,4,5,6,7)] %>% group_by(GE) %>% summarise(TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19))
+excl_days <- excl_days[1:80,]
+cbind(day = excl_days[,1],excl = excl_days$TOTALE_16/(incl_days$TOTALE_16+excl_days$TOTALE_16))
+#quite uniform
+
+
