@@ -19,6 +19,9 @@ gooddays <- c("0101","0102","0103","0104","0105","0106","0107","0108","0109","01
           "0301","0302","0303","0304","0305","0306","0307","0308","0309","0310",
           "0311","0312","0313","0314","0315","0316","0317","0318","0319","0320",
           "0321","0322","0323","0324","0325","0326","0327","0328","0329","0330","0331")
+march21 <- c("0301","0302","0303","0304","0305","0306","0307","0308","0309","0310",
+           "0311","0312","0313","0314","0315","0316","0317","0318","0319","0320",
+           "0321")
 
 #Lombardy
 lombardy <- deaths %>% filter(NOME_REGIONE == "Lombardia") %>% filter(GE %in% gooddays)
@@ -91,5 +94,45 @@ incl_days <- data[,c(3,4,5,6,7)] %>% group_by(GE) %>% summarise(TOTALE_16 = sum(
 excl_days <- excl_days[1:80,]
 cbind(day = excl_days[,1],excl = excl_days$TOTALE_16/(incl_days$TOTALE_16+excl_days$TOTALE_16))
 #quite uniform
+
+
+#model based on uniformity within provinces
+#cfr. https://github.com/paolozapp/covid19/blob/master/Lombardy_model.pdf
+#only march 1-21
+comuni <- lombardy[,c(5,4,8,22,23,24,25,26)] %>% filter(GE %in% march21)
+comuni_known <- comuni %>% filter(TOTALE_20 != 9999)
+comuni_unknown <- comuni %>% filter(TOTALE_20 == 9999)
+comuni_known <- comuni_known[,c(1,2,4,5,6,7,8)]
+comuni_known[,3] <- as.numeric(as.character(comuni_known[,3]))
+comuni_known[,4] <- as.numeric(as.character(comuni_known[,4]))
+comuni_known[,5] <- as.numeric(as.character(comuni_known[,5]))
+comuni_known[,6] <- as.numeric(as.character(comuni_known[,6]))
+comuni_known[,7] <- as.numeric(as.character(comuni_known[,7]))
+comuni_unknown <- comuni_unknown[,c(1,2,4,5,6,7)]
+comuni_unknown[,3] <- as.numeric(as.character(comuni_unknown[,3]))
+comuni_unknown[,4] <- as.numeric(as.character(comuni_unknown[,4]))
+comuni_unknown[,5] <- as.numeric(as.character(comuni_unknown[,5]))
+comuni_unknown[,6] <- as.numeric(as.character(comuni_unknown[,6]))
+#alphat
+alphat_known <- cbind.data.frame(town = comuni_known$NOME_COMUNE, province = comuni_known$NOME_PROVINCIA, total = (comuni_known[,3]+comuni_known[,4]+comuni_known[,5]+comuni_known[,6]))
+alphat_known <- alphat_known %>% group_by(town,province) %>% summarise(alphat = sum(total)/4)
+alphat_unknown <- cbind.data.frame(town = comuni_unknown$NOME_COMUNE, province = comuni_unknown$NOME_PROVINCIA, total = (comuni_unknown[,3]+comuni_unknown[,4]+comuni_unknown[,5]+comuni_unknown[,6]))
+alphat_unknown <- alphat_unknown %>% group_by(town,province) %>% summarise(alphat = sum(total)/4)
+#yt
+yt <- comuni_known[,c(1,2,7)]
+yt <- yt %>% filter(TOTALE_20 != 9999)
+yt <- yt %>% group_by(NOME_COMUNE,NOME_PROVINCIA) %>% summarise(TOTALE_20 = sum(TOTALE_20))
+#alphap
+aux1 <- yt %>% group_by(NOME_PROVINCIA) %>% summarise(TOTALE_20 = sum(TOTALE_20))
+aux2 <- alphat_known %>% group_by(province) %>% summarise(alphat = sum(alphat))
+alphap <- cbind.data.frame(province = aux2$province, alphap = aux1$TOTALE_20/aux2$alphat)
+alphatotprov <- alphat_unknown %>% group_by(province) %>% summarise(alphat = sum(alphat))
+#estimate
+deathtoll_lwr <- sum(yt$TOTALE_20) - sum(alphat_known$alphat)
+deathtoll <- sum(yt$TOTALE_20) - sum(alphat_known$alphat) + sum((alphap$alphap-1) * alphatotprov$alphat)
+
+
+
+
 
 
