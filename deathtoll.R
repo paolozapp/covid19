@@ -113,16 +113,16 @@ comuni_unknown[,3] <- as.numeric(as.character(comuni_unknown[,3]))
 comuni_unknown[,4] <- as.numeric(as.character(comuni_unknown[,4]))
 comuni_unknown[,5] <- as.numeric(as.character(comuni_unknown[,5]))
 comuni_unknown[,6] <- as.numeric(as.character(comuni_unknown[,6]))
-#alphat
+#alpha_t
 alphat_known <- cbind.data.frame(town = comuni_known$NOME_COMUNE, province = comuni_known$NOME_PROVINCIA, total = (comuni_known[,3]+comuni_known[,4]+comuni_known[,5]+comuni_known[,6]))
 alphat_known <- alphat_known %>% group_by(town,province) %>% summarise(alphat = sum(total)/4)
 alphat_unknown <- cbind.data.frame(town = comuni_unknown$NOME_COMUNE, province = comuni_unknown$NOME_PROVINCIA, total = (comuni_unknown[,3]+comuni_unknown[,4]+comuni_unknown[,5]+comuni_unknown[,6]))
 alphat_unknown <- alphat_unknown %>% group_by(town,province) %>% summarise(alphat = sum(total)/4)
-#yt
+#y_t
 yt <- comuni_known[,c(1,2,7)]
 yt <- yt %>% filter(TOTALE_20 != 9999)
 yt <- yt %>% group_by(NOME_COMUNE,NOME_PROVINCIA) %>% summarise(TOTALE_20 = sum(TOTALE_20))
-#alphap
+#alpha_p
 aux1 <- yt %>% group_by(NOME_PROVINCIA) %>% summarise(TOTALE_20 = sum(TOTALE_20))
 aux2 <- alphat_known %>% group_by(province) %>% summarise(alphat = sum(alphat))
 alphap <- cbind.data.frame(province = aux2$province, alphap = aux1$TOTALE_20/aux2$alphat)
@@ -130,8 +130,34 @@ alphatotprov <- alphat_unknown %>% group_by(province) %>% summarise(alphat = sum
 #estimate
 deathtoll_lwr <- sum(yt$TOTALE_20) - sum(alphat_known$alphat)
 deathtoll <- sum(yt$TOTALE_20) - sum(alphat_known$alphat) + sum((alphap$alphap-1) * alphatotprov$alphat)
-
-
+#intervals
+#gaussian?
+isitgaussian <- rbind(alphat_known %>% group_by(province) %>% summarise(alphat=sum(alphat)),alphat_unknown %>% group_by(province) %>% summarise(alphat=sum(alphat)))
+isitgaussian <- isitgaussian %>% group_by(province) %>% summarise(alphat=sum(alphat))
+othergaussian <- rbind(comuni_known %>% group_by(NOME_PROVINCIA) %>% summarise(TOTALE_16=sum(TOTALE_16),TOTALE_17=sum(TOTALE_17),TOTALE_18=sum(TOTALE_18),TOTALE_19=sum(TOTALE_19)),comuni_unknown %>% group_by(NOME_PROVINCIA) %>% summarise(TOTALE_16=sum(TOTALE_16),TOTALE_17=sum(TOTALE_17),TOTALE_18=sum(TOTALE_18),TOTALE_19=sum(TOTALE_19)))
+othergaussian <- othergaussian %>% group_by(NOME_PROVINCIA) %>% summarise(TOTALE_16=sum(TOTALE_16),TOTALE_17=sum(TOTALE_17),TOTALE_18=sum(TOTALE_18),TOTALE_19=sum(TOTALE_19))
+othergaussian <- cbind(othergaussian,alphat = isitgaussian$alphat)
+isitgaussian <- cbind(province = othergaussian$NOME_PROVINCIA, TOTALE_16 = othergaussian$TOTALE_16/othergaussian$alphat,TOTALE_17 = othergaussian$TOTALE_17/othergaussian$alphat,TOTALE_18 = othergaussian$TOTALE_18/othergaussian$alphat,TOTALE_19 = othergaussian$TOTALE_19/othergaussian$alphat)
+isitgaussian <- as.vector(isitgaussian[,2:5])
+shapiro.test(isitgaussian)
+#yes it is
+sigma <- sqrt(var(isitgaussian))
+#variance of alpha_p
+aux1 <- cbind.data.frame(yt,alphat=alphat_known$alphat)
+aux1 <- aux1 %>% filter(alphat>=1)
+# ∑ alpha_t alpha_p^2 / ∑ alphat = ∑ (TOTALE_20^2 / alphat) / ∑ alphat 
+#aux1 <- cbind.data.frame(aux1,divv = aux1$TOTALE_20*aux1$TOTALE_20/aux1$alphat)
+#aux2 <- aux1 %>% group_by(NOME_PROVINCIA) %>% summarise(alphap = sum(TOTALE_20)/sum(alphat), alphap2 = sum(divv)/sum(alphat))
+#aux2 <- cbind.data.frame(aux2,sigma = sqrt(aux2$alphap2-aux2$alphap*aux2$alphap))
+#aux2 <- cbind.data.frame(aux2,apmin = aux2$alphap - 2*aux2$sigma, apmax = aux2$alphap + 2*aux2$sigma)
+aux1 <- cbind.data.frame(aux1,alphap=aux1$TOTALE_20/aux1$alphat)
+aux1 <- aux1 %>% group_by(NOME_PROVINCIA) %>% summarise(apmin = min(alphap),apmax=max(alphap))
+aux2 <- (aux2$apmin - 1 + 2*sigma) * alphatotprov$alphat
+deathtoll_lwr <- sum(yt$TOTALE_20) - sum(alphat_known$alphat)*(1+2*sigma) + sum(aux2[aux2>0])
+deathtoll_upp <- sum(yt$TOTALE_20) - sum(alphat_known$alphat)*(1-2*sigma) + sum((aux1$apmax - 1 - 2*sigma) * alphatotprov$alphat)
+#alternative with alphap constant
+deathtoll_lwr <- sum(yt$TOTALE_20) - sum(alphat_known$alphat)*(1+2*sigma) + sum((alphap$alphap - 1 + 2*sigma) * alphatotprov$alphat)
+deathtoll_upp <- sum(yt$TOTALE_20) - sum(alphat_known$alphat)*(1-2*sigma) + sum((alphap$alphap - 1 - 2*sigma) * alphatotprov$alphat)
 
 
 
