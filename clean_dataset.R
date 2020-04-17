@@ -14,6 +14,8 @@ rm(list=ls()) #delete all variables
 
 #Upload data
 ISTAT_dataset <- read.table(file = 'comune_giorno.csv',header=TRUE,sep=",",fill=TRUE)
+
+#Considering every day until today except 29/02
 days <- c("0101","0102","0103","0104","0105","0106","0107","0108","0109","0110",
           "0111","0112","0113","0114","0115","0116","0117","0118","0119","0120",
           "0121","0122","0123","0124","0125","0126","0127","0128","0129","0130","0131",
@@ -32,6 +34,14 @@ aftermarch <- c("0301","0302","0303","0304","0305","0306","0307","0308","0309","
       "0401","0402","0403","0404","0405","0406","0407","0408","0409","0410",
       "0411","0412","0413","0414","0415","0416","0417")#,"0418","0419","0420",
 #"0421","0422","0423","0424","0425","0426","0427","0428","0429","0430")
+officialtolldays <- c("0220",
+                      "0221","0222","0223","0224","0225","0226","0227","0228",
+                      "0301","0302","0303","0304","0305","0306","0307","0308","0309","0310",
+                      "0311","0312","0313","0314","0315","0316","0317","0318","0319","0320",
+                      "0321","0322","0323","0324","0325","0326","0327","0328","0329","0330","0331",
+                      "0401","0402","0403","0404","0405","0406","0407","0408","0409","0410",
+                      "0411","0412","0413","0414","0415","0416","0417")#,"0418","0419","0420",
+#"0421","0422","0423","0424","0425","0426","0427","0428","0429","0430"))
 
 #only days of interest
 ISTAT_italy <- ISTAT_dataset %>% filter(GE %in% days)
@@ -54,3 +64,10 @@ ISTAT_italy[,"TOTALE_20"] <- as.numeric(as.character(ISTAT_italy[,"TOTALE_20"]))
 
 #summing data from all the ages
 data_italy <- ISTAT_italy %>% group_by(NOME_REGIONE,NOME_PROVINCIA,NOME_COMUNE,GE,missing) %>% summarise(TOTALE_15 = sum(TOTALE_15),TOTALE_16 = sum(TOTALE_16),TOTALE_17 = sum(TOTALE_17),TOTALE_18 = sum(TOTALE_18),TOTALE_19 = sum(TOTALE_19),TOTALE_20 = sum(TOTALE_20))
+
+
+# official death toll
+#Source: https://datastudio.google.com/u/0/reporting/91350339-2c97-49b5-92b8-965996530f00/page/RdlHB
+Google_IT_dataset <- read.table(file = 'Coronavirus Italia_Main Dashboard_Serie temporali.csv',header=TRUE,sep=",",fill=TRUE)
+toll_italy <- cbind(day = officialtolldays,dailytoll = Google_IT_dataset[c(2:10,12:dim(Google_IT_dataset)[1]),"Daily.Deaths"])
+
