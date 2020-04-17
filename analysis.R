@@ -29,3 +29,19 @@ abline(v=c(1,32,60,91),lty=3)
 #superposition of dailytoll to average deaths
 expectedtoll <- cbind(day = days[-which(days %in% officialtolldays)],dailytoll = rep(0,length(days[-which(days %in% officialtolldays)])))
 expectedtoll <- rbind(expectedtoll,toll_italy)
+#adding average death 2015-2019
+expectedtoll <- expectedtoll[1:dim(daybyday_known)[1],]
+expectedtoll[,"dailytoll"] <- as.numeric(expectedtoll[,"dailytoll"]) + rowSums(daybyday_known[,2:6])/5
+
+plot(0,0,type="n",xlim=c(1,dim(daybyday_known)[1]),ylim=c(0,round(max(as.numeric(expectedtoll[,2]))/100)+1)*100,xlab="Day of the year",ylab = "Daily deaths",xaxt='n')
+axis(1,at=c(1,32,60,91),labels=c("Jan 1","Feb 1","Mar 1","Apr 1"))
+title(main = "Daily deaths, Italy")
+points(daybyday_known$GE,daybyday_known$TOTALE_15,col="gray",pch=20)
+points(daybyday_known$GE,daybyday_known$TOTALE_16,col="gray",pch=20)
+points(daybyday_known$GE,daybyday_known$TOTALE_17,col="gray",pch=20)
+points(daybyday_known$GE,daybyday_known$TOTALE_18,col="gray",pch=20)
+points(daybyday_known$GE,daybyday_known$TOTALE_19,col="gray",pch=20)
+lines(daybyday_known$GE,daybyday_known$TOTALE_20,col="red",lwd=2)
+lines(daybyday_known$GE,expectedtoll[,2],col="blue",lwd=2)
+abline(v=c(1,32,60,91),lty=3)
+legend("topleft",legend=c("Daily deaths (sample)","Official toll + avg"),col=c("red","blue"),lty=c(1,1), cex=0.8)
